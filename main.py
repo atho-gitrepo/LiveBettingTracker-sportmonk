@@ -1,7 +1,20 @@
+# main.py
 from threading import Thread
-from web import start_web
+from web import app  # ← This exposes the Flask app object
 from bot import run_bot_once
+import time
+
+def launch_web():
+    from web import start_web
+    start_web()
 
 if __name__ == "__main__":
-    Thread(target=start_web).start()  # Start web server
-    # UptimeRobot or browser will ping /ping endpoint
+    web_thread = Thread(target=launch_web)
+    web_thread.daemon = True
+    web_thread.start()
+
+    try:
+        while True:
+            time.sleep(60)
+    except KeyboardInterrupt:
+        print("🔴 Shutting down...")
