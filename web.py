@@ -33,7 +33,7 @@ def index():
     </head>
     <body>
         <div class="container shadow p-4 bg-white rounded">
-            <h2 class="mb-4 text-center text-primary">⚽ 36’ & 80’ Betting Strategy Tracker</h2>
+            <h2 class="mb-4 text-center text-primary">⚽ Betting Strategy Tracker</h2>
             <p class="text-muted text-end"><strong>Last Checked:</strong> {{ last_check }}</p>
             <hr>
             {% if active_matches %}
