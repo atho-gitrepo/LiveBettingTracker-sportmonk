@@ -23,6 +23,9 @@ def get_live_matches():
 def process_match(match):
     fixture_id = match['fixture']['id']
     match_name = f"{match['teams']['home']['name']} vs {match['teams']['away']['name']}"
+    league_name = match['league']['name']
+    league_country = match['league']['country']
+    league_info = f"{league_name} ({league_country})"
     score = match['goals']
     minute = match['fixture']['status']['elapsed']
     status = match['fixture']['status']['short']
@@ -42,29 +45,29 @@ def process_match(match):
         score_36 = f"{score['home']}-{score['away']}"
         state['score_36'] = score_36
         state['36_bet_placed'] = True
-        send_telegram(f"⏱️ 36' - {match_name} | Score: {score_36} | First Bet Placed")
+        send_telegram(f"⏱️ 36' - {match_name}\n🏆 {league_info}\n🔢 Score: {score_36}\n🎯 First Bet Placed")
 
     if status == 'HT' and state['36_bet_placed'] and not state['36_result_checked']:
         current_score = f"{score['home']}-{score['away']}"
         if current_score == state['score_36']:
-            send_telegram(f"✅ HT Result: {match_name} | Score: {current_score} | 36’ Bet WON")
+            send_telegram(f"✅ HT Result: {match_name}\n🏆 {league_info}\n🔢 Score: {current_score}\n🎉 36’ Bet WON")
             state['skip_80'] = True
         else:
-            send_telegram(f"❌ HT Result: {match_name} | Score: {current_score} | 36’ Bet LOST — will chase at 80’")
+            send_telegram(f"❌ HT Result: {match_name}\n🏆 {league_info}\n🔢 Score: {current_score}\n🔁 36’ Bet LOST — chasing at 80’")
         state['36_result_checked'] = True
 
     if minute == 80 and state['36_result_checked'] and not state.get('skip_80', False) and not state['80_bet_placed']:
         score_80 = f"{score['home']}-{score['away']}"
         state['score_80'] = score_80
         state['80_bet_placed'] = True
-        send_telegram(f"⏱️ 80' - {match_name} | Score: {score_80} | Chase Bet Placed")
+        send_telegram(f"⏱️ 80' - {match_name}\n🏆 {league_info}\n🔢 Score: {score_80}\n🎯 Chase Bet Placed")
 
     if status == 'FT' and state['80_bet_placed'] and not state['80_result_checked']:
         final_score = f"{score['home']}-{score['away']}"
         if final_score == state['score_80']:
-            send_telegram(f"✅ FT Result: {match_name} | Score: {final_score} | Chase Bet WON")
+            send_telegram(f"✅ FT Result: {match_name}\n🏆 {league_info}\n🔢 Score: {final_score}\n🎉 Chase Bet WON")
         else:
-            send_telegram(f"❌ FT Result: {match_name} | Score: {final_score} | Chase Bet LOST")
+            send_telegram(f"❌ FT Result: {match_name}\n🏆 {league_info}\n🔢 Score: {final_score}\n📉 Chase Bet LOST")
         state['80_result_checked'] = True
 
 def run_bot_once():
