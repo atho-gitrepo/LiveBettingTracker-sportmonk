@@ -1,9 +1,10 @@
 import requests
+import os
 from datetime import datetime
 
-API_KEY = '51f8c4e394d298a11535376be35c3999'
-TELEGRAM_TOKEN = '8078275158:AAFMtF2Nr3d1_jEBORZjyAg42NMftIw-CyE'
-TELEGRAM_CHAT_ID = '787922010'
+API_KEY = os.getenv("API_KEY")
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 HEADERS = {'x-apisports-key': API_KEY}
 BASE_URL = 'https://v3.football.api-sports.io'
