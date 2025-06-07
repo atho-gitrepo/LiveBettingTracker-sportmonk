@@ -6,8 +6,9 @@ API_KEY = os.getenv("API_KEY")
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
-HEADERS = {'x-apisports-key': API_KEY}
-BASE_URL = 'https://api.sportmonks.com/v3/football/livescores'
+HEADERS = {"x-rapidapi-host": "free-api-live-football-data.p.rapidapi.com",
+           'x-apisports-key': API_KEY}
+BASE_URL = 'https://free-api-live-football-data.p.rapidapi.com/football-current-live'
 tracked_matches = {}
 
 def send_telegram(msg):
@@ -16,22 +17,36 @@ def send_telegram(msg):
     requests.post(url, data=data)
 
 def get_live_matches():
-    url = f"{BASE_URL}"
-    res = requests.get(url, headers=HEADERS)
-    return res.json()['response']
+    url = "https://free-api-live-football-data.p.rapidapi.com/football-current-live"
+    headers = {
+        "x-rapidapi-host": "free-api-live-football-data.p.rapidapi.com",
+        "x-rapidapi-key": API_KEY
+    }
+    res = requests.get(url, headers=headers)
+    data = res.json()
+
+    if data.get("status") != "success":
+        raise Exception("API response error")
+
+    return data["response"]["live"]
 
 def process_match(match):
-    fixture_id = match['fixture']['id']
-    match_name = f"{match['teams']['home']['name']} vs {match['teams']['away']['name']}"
-    league_name = match['league']['name']
-    league_country = match['league']['country']
-    league_info = f"{league_name} ({league_country})"
-    score = match['goals']
-    minute = match['fixture']['status']['elapsed']
-    status = match['fixture']['status']['short']
+    match_id = match["id"]
+    match_name = f"{match['home']['name']} vs {match['away']['name']}"
+    league_info = f"League ID: {match['leagueId']}"
+    score_home = match['home']['score']
+    score_away = match['away']['score']
+    score = f"{score_home}-{score_away}"
 
-    if fixture_id not in tracked_matches:
-        tracked_matches[fixture_id] = {
+    # Minute from "status.liveTime.short" e.g., "62’" => 62
+    try:
+        minute_str = match['status']['liveTime']['short']
+        minute = int(minute_str.replace("’", "").strip())
+    except:
+        minute = None
+
+    if match_id not in tracked_matches:
+        tracked_matches[match_id] = {
             '36_bet_placed': False,
             '36_result_checked': False,
             '80_bet_placed': False,
@@ -39,35 +54,31 @@ def process_match(match):
             'match_name': match_name
         }
 
-    state = tracked_matches[fixture_id]
+    state = tracked_matches[match_id]
 
     if minute == 36 and not state['36_bet_placed']:
-        score_36 = f"{score['home']}-{score['away']}"
-        state['score_36'] = score_36
+        state['score_36'] = score
         state['36_bet_placed'] = True
-        send_telegram(f"⏱️ 36' - {match_name}\n🏆 {league_info}\n🔢 Score: {score_36}\n🎯 First Bet Placed")
+        send_telegram(f"⏱️ 36' - {match_name}\n🏆 {league_info}\n🔢 Score: {score}\n🎯 First Bet Placed")
 
-    if status == 'HT' and state['36_bet_placed'] and not state['36_result_checked']:
-        current_score = f"{score['home']}-{score['away']}"
-        if current_score == state['score_36']:
-            send_telegram(f"✅ HT Result: {match_name}\n🏆 {league_info}\n🔢 Score: {current_score}\n🎉 36’ Bet WON")
+    if minute and minute > 45 and not state['36_result_checked']:
+        if score == state.get('score_36'):
+            send_telegram(f"✅ HT Result: {match_name}\n🏆 {league_info}\n🔢 Score: {score}\n🎉 36’ Bet WON")
             state['skip_80'] = True
         else:
-            send_telegram(f"❌ HT Result: {match_name}\n🏆 {league_info}\n🔢 Score: {current_score}\n🔁 36’ Bet LOST — chasing at 80’")
+            send_telegram(f"❌ HT Result: {match_name}\n🏆 {league_info}\n🔢 Score: {score}\n🔁 36’ Bet LOST — chasing at 80’")
         state['36_result_checked'] = True
 
-    if minute == 80 and state['36_result_checked'] and not state.get('skip_80', False) and not state['80_bet_placed']:
-        score_80 = f"{score['home']}-{score['away']}"
-        state['score_80'] = score_80
+    if minute == 80 and not state.get('skip_80', False) and not state['80_bet_placed']:
+        state['score_80'] = score
         state['80_bet_placed'] = True
-        send_telegram(f"⏱️ 80' - {match_name}\n🏆 {league_info}\n🔢 Score: {score_80}\n🎯 Chase Bet Placed")
+        send_telegram(f"⏱️ 80' - {match_name}\n🏆 {league_info}\n🔢 Score: {score}\n🎯 Chase Bet Placed")
 
-    if status == 'FT' and state['80_bet_placed'] and not state['80_result_checked']:
-        final_score = f"{score['home']}-{score['away']}"
-        if final_score == state['score_80']:
-            send_telegram(f"✅ FT Result: {match_name}\n🏆 {league_info}\n🔢 Score: {final_score}\n🎉 Chase Bet WON")
+    if match['status']['finished'] and state['80_bet_placed'] and not state['80_result_checked']:
+        if score == state.get('score_80'):
+            send_telegram(f"✅ FT Result: {match_name}\n🏆 {league_info}\n🔢 Score: {score}\n🎉 Chase Bet WON")
         else:
-            send_telegram(f"❌ FT Result: {match_name}\n🏆 {league_info}\n🔢 Score: {final_score}\n📉 Chase Bet LOST")
+            send_telegram(f"❌ FT Result: {match_name}\n🏆 {league_info}\n🔢 Score: {score}\n📉 Chase Bet LOST")
         state['80_result_checked'] = True
 
 def run_bot_once():
@@ -78,7 +89,7 @@ def run_bot_once():
         from web import bot_status  # safe to import here, not at top
         bot_status['last_check'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         bot_status['active_matches'] = [
-            f"{m['teams']['home']['name']} vs {m['teams']['away']['name']} ({m['fixture']['status']['elapsed']}')" 
+            f"{m['home']['name']} vs {m['away']['name']} ({m['status']['liveTime']['short']})" 
             for m in live_matches
         ]
 
