@@ -7,7 +7,7 @@ TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 HEADERS = {'x-apisports-key': API_KEY}
-BASE_URL = 'https://v3.football.api-sports.io'
+BASE_URL = 'https://api.sportmonks.com/v3/football/livescores'
 tracked_matches = {}
 
 def send_telegram(msg):
