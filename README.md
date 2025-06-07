@@ -20,3 +20,10 @@ This bot monitors live football matches using the [API-Football v3](https://www.
 
 ### 1. Push Code to GitHub
 Make sure your files are structured like this:
+
+📁 your-repo/
+├── main.py         # Flask server + main loop
+├── bot.py          # Optional: single-run version (for cron jobs)
+├── web.py          # Flask routes
+├── requirements.txt
+├── README.md
