@@ -16,7 +16,7 @@ def send_telegram(msg):
     requests.post(url, data=data)
 
 def get_live_matches():
-    url = f"{BASE_URL}/fixtures?live=all"
+    url = f"{BASE_URL}"
     res = requests.get(url, headers=HEADERS)
     return res.json()['response']
 
